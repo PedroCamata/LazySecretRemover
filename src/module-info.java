@@ -4,6 +4,6 @@
 /**
  * 
  */
-module lazySecretRemover {
+module BfgUI {
 	requires java.desktop;
 }
