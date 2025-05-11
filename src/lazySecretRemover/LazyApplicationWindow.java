@@ -87,7 +87,7 @@ public class LazyApplicationWindow {
 				toggleButtons(true);
 			}
 		});
-		secretsButton.setBounds(12, 251, 596, 25);
+		secretsButton.setBounds(12, 253, 600, 25);
 		secretsButton.setEnabled(false);
 		frame.getContentPane().add(secretsButton);
 		
@@ -107,7 +107,7 @@ public class LazyApplicationWindow {
 				toggleButtons(true);
 			}
 		});
-		filesButton.setBounds(12, 462, 596, 25);
+		filesButton.setBounds(12, 462, 600, 25);
 		filesButton.setEnabled(false);
 		frame.getContentPane().add(filesButton);
 		
@@ -119,7 +119,7 @@ public class LazyApplicationWindow {
 				toggleButtons(true);
 			}
 		});
-		btnCloneRepo.setBounds(12, 52, 596, 25);
+		btnCloneRepo.setBounds(12, 52, 600, 25);
 		frame.getContentPane().add(btnCloneRepo);
 		
 		JLabel lblSignature = new JLabel("Created by Pedro Camata Andreon");
