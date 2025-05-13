@@ -18,27 +18,32 @@ public class LazySecretRemoverService {
 		System.out.print("\nCloneRepo method");
 
 		try {
-			ProcessBuilder builder = new ProcessBuilder("git", "clone", gitRepoUrl); // "--mirror", 
-			builder.inheritIO();
-			Process pr = builder.start();
-			pr.waitFor();
-
 			// Set name of the repo folder from last '/' in the gitRepoUrl
 			String repoName = gitRepoUrl.substring(gitRepoUrl.lastIndexOf('/') + 1);
 			if (repoName.endsWith(".git")) {
 				repoName = repoName.substring(0, repoName.length() - 4);
 			}
 			repoFolder = repoName;
-
-			// Backup git repo in a different folder
 			File original = new File(repoFolder);
-			File backup = new File(repoFolder + "_backup");
-			if (original.exists()) {
-				copyFolder(original, backup);
+			
+			if (!original.exists()) {
+				ProcessBuilder builder = new ProcessBuilder("git", "clone", gitRepoUrl);
+				builder.inheritIO();
+				Process pr = builder.start();
+				pr.waitFor();
+				System.out.println("Repository cloned successfully");
+			} else {
+				System.out.println("Repository has already been cloned");
 			}
 
-			// Send pop message when has finished
-			System.out.println("Repository cloned and backup created successfully.");
+			// Backup git repo in a different folder			
+			File backup = new File(repoFolder + "_backup");
+			if (!backup.exists()) {
+				copyFolder(original, backup);
+				System.out.println("Backup created successfully");
+			} else {
+				System.out.println("Backup has already been created");
+			}
 
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
@@ -50,7 +55,6 @@ public class LazySecretRemoverService {
 
 		// Get the secrets address from the lines of text
 		String[] secrets = text.split("\n");
-		
 		File secretsFile = createTempFile(secrets);
 		
 		try {
@@ -72,7 +76,7 @@ public class LazySecretRemoverService {
 
 		// Get the file address from the lines of text
 		String[] files = text.split("\n");
-
+		
 		for (String file : files) {
 			try {
 				ProcessBuilder builder = new ProcessBuilder("java", "-jar", "bfg.jar", "--delete-files", file, "--no-blob-protection", repoFolder);
@@ -83,10 +87,11 @@ public class LazySecretRemoverService {
 				e.printStackTrace();
 			}
 		}
-
+		
 		System.out.println("Files removed successfully.");
 	}
 
+	// TODO: To be implemented future implementation
 	public void gitPushForce() {
 		try {
 			ProcessBuilder builder = new ProcessBuilder("git", "--git-dir=" + repoFolder, "push", "--force");
