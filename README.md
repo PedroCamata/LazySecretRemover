@@ -42,6 +42,9 @@ No manual BFG or filter-branch fiddling needed. Just point, click, and clean!
 - Paste or type any secret strings (e.g., passwords, API keys) into the **“Remove Text Secrets”** box
 - Click **“Remove Text Secrets”**
 - 🔐 Secrets will be replaced with `***REMOVED***` in the entire Git history
+#### To replace secrets with custom values:
+- Use the format `SECRET==>NEW_TEXT`
+- For example: `myapikey123==>REPLACED_API_KEY`
 
 ### 3. Remove Files from History
 - Type the names of files you want to permanently delete (e.g., `.env`, `id_rsa`) in the **“Remove Files from history”** box
