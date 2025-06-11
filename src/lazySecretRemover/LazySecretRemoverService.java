@@ -15,77 +15,58 @@ public class LazySecretRemoverService {
 	}
 
 	public void cloneRepo(String gitRepoUrl) {
-		System.out.print("\nCloneRepo method");
+		// Set name of the repo folder from last '/' in the gitRepoUrl
+		String repoName = gitRepoUrl.substring(gitRepoUrl.lastIndexOf('/') + 1);
+		if (repoName.endsWith(".git")) {
+			repoName = repoName.substring(0, repoName.length() - 4);
+		}
+		repoFolder = repoName;
+		File original = new File(repoFolder);
+		
+		if (!original.exists()) {
+			runCommands("git", "clone", gitRepoUrl);
+			fetchAllBranches(repoFolder);
+			System.out.println("Repository cloned successfully");
+		} else {
+			System.out.println("Repository has already been cloned");
+		}
 
-		try {
-			// Set name of the repo folder from last '/' in the gitRepoUrl
-			String repoName = gitRepoUrl.substring(gitRepoUrl.lastIndexOf('/') + 1);
-			if (repoName.endsWith(".git")) {
-				repoName = repoName.substring(0, repoName.length() - 4);
-			}
-			repoFolder = repoName;
-			File original = new File(repoFolder);
-			
-			if (!original.exists()) {
-				ProcessBuilder builder = new ProcessBuilder("git", "clone", gitRepoUrl);
-				builder.inheritIO();
-				Process pr = builder.start();
-				pr.waitFor();
-				System.out.println("Repository cloned successfully");
-			} else {
-				System.out.println("Repository has already been cloned");
-			}
-
-			// Backup git repo in a different folder			
-			File backup = new File(repoFolder + "_backup");
-			if (!backup.exists()) {
+		// Backup git repo in a different folder			
+		File backup = new File(repoFolder + "_backup");
+		if (!backup.exists()) {
+			try {
 				copyFolder(original, backup);
-				System.out.println("Backup created successfully");
-			} else {
-				System.out.println("Backup has already been created");
+			} catch (IOException e) {
+				e.printStackTrace();
+				return;
 			}
-
-		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
+			System.out.println("Backup created successfully");
+		} else {
+			System.out.println("Backup has already been created");
 		}
 	}
 
 	public void removeSecrets(String text) {
-		System.out.print(text);
+		System.out.print("Removing text:\n" + text);
 
 		// Get the secrets address from the lines of text
 		String[] secrets = text.split("\n");
 		File secretsFile = createTempFile(secrets);
 		
-		try {
-			
-			ProcessBuilder builder = new ProcessBuilder("java", "-jar", "bfg.jar", "--replace-text", secretsFile.getAbsolutePath(), repoFolder);
-			builder.inheritIO();
-			Process pr = builder.start();
-			pr.waitFor();
-		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
-		}
+		runCommands("java", "-jar", "bfg.jar", "--replace-text", secretsFile.getAbsolutePath(), repoFolder);
 		
 		deleteTempFile(secretsFile);
 		System.out.println("Secrets removed successfully.");
 	}
 
 	public void removeFiles(String text) {
-		System.out.print(text);
+		System.out.print("Removing files:\n" + text);
 
 		// Get the file address from the lines of text
 		String[] files = text.split("\n");
 		
 		for (String file : files) {
-			try {
-				ProcessBuilder builder = new ProcessBuilder("java", "-jar", "bfg.jar", "--delete-files", file, "--no-blob-protection", repoFolder);
-				builder.inheritIO();
-				Process pr = builder.start();
-				pr.waitFor();
-			} catch (IOException | InterruptedException e) {
-				e.printStackTrace();
-			}
+			runCommands("java", "-jar", "bfg.jar", "--delete-files", file, "--no-blob-protection", repoFolder);
 		}
 		
 		System.out.println("Files removed successfully.");
@@ -93,12 +74,32 @@ public class LazySecretRemoverService {
 
 	// TODO: To be implemented future implementation
 	public void gitPushForce() {
+		runCommands("git", "--git-dir=" + repoFolder, "push", "--force");
+		System.out.println("Force push completed successfully.");
+	}
+	
+	private void runCommands(String... command) {
 		try {
-			ProcessBuilder builder = new ProcessBuilder("git", "--git-dir=" + repoFolder, "push", "--force");
+			ProcessBuilder builder = new ProcessBuilder(command);
 			builder.inheritIO();
 			Process pr = builder.start();
 			pr.waitFor();
-			System.out.println("Force push completed successfully.");
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void fetchAllBranches(String repoFolder) {
+		try {
+			ProcessBuilder builder = new ProcessBuilder(
+				"bash", "-c",
+				"git fetch --all && " +
+				"for remote_branch in $(git branch -r | grep -v '\\->'); do " +
+				"git branch --track \"${remote_branch#*/}\" \"$remote_branch\" 2>/dev/null; done");
+			builder.directory(new File(repoFolder));
+			builder.inheritIO();
+			Process pr = builder.start();
+			pr.waitFor();
 		} catch (IOException | InterruptedException e) {
 			e.printStackTrace();
 		}
